@@ -31,6 +31,8 @@ public class ScenarioFinish {
 	private LinkedList<Identifier> randomItems = new LinkedList<>();
 	@Required
 	private LinkedList<Integer> randomItemBlueprints = new LinkedList<>();
+	@Required
+	private LinkedList<Integer> randomItemDesigns = new LinkedList<>();
 	private Identifier randomSideScenario;
 	@Required
 	private LinkedList<Boolean> trials = new LinkedList<>();
