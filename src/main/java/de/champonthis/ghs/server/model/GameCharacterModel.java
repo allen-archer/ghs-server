@@ -67,11 +67,9 @@ public class GameCharacterModel {
 	@Required
 	private LinkedList<Identifier> battleGoals = new LinkedList<>();
 	private Boolean battleGoal = false;
-	private String shield;
-	private String shieldPersistent;
 	@Required
-	private LinkedList<String> retaliate = new LinkedList<>();
+	private LinkedList<String> extraActions = new LinkedList<>();
 	@Required
-	private LinkedList<String> retaliatePersistent = new LinkedList<>();
+	private LinkedList<String> extraActionsPersistent = new LinkedList<>();
 
 }

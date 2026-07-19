@@ -31,11 +31,9 @@ public class GameObjectiveEntityModel {
 	private LinkedList<String> markers = new LinkedList<>();
 	@Required
 	private LinkedList<String> tags = new LinkedList<>();
-	private String shield;
-	private String shieldPersistent;
 	@Required
-	private LinkedList<String> retaliate = new LinkedList<>();
+	private LinkedList<String> extraActions = new LinkedList<>();
 	@Required
-	private LinkedList<String> retaliatePersistent = new LinkedList<>();
+	private LinkedList<String> extraActionsPersistent = new LinkedList<>();
 
 }

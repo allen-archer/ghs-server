@@ -98,8 +98,8 @@ public class TestUtils {
 		c.addProperty("absent", false);
 		c.addProperty("longRest", false);
 		c.add("battleGoals", new JsonArray());
-		c.add("retaliate", new JsonArray());
-		c.add("retaliatePersistent", new JsonArray());
+		c.add("extraActions", new JsonArray());
+		c.add("extraActionsPersistent", new JsonArray());
 		return c;
 	}
 

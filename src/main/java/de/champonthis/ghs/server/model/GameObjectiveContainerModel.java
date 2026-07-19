@@ -25,5 +25,6 @@ public class GameObjectiveContainerModel {
 	private ScenarioObjectiveIdentifier objectiveId;
 	private AdditionalIdentifier additionalObjectiveId;
 	private String amDeck;
+	private LinkedList<String> actions;
 
 }
