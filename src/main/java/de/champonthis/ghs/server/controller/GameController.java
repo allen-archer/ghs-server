@@ -145,8 +145,7 @@ public class GameController {
 
 			if (silent.isEmpty() || !silent.get()) {
 				for (WebSocketSessionContainer container : messageHandler.getWebSocketSessions()) {
-					if (container.getGameId() == gameId
-							&& !messageHandler.getWebSocketSessionsCleanUp().contains(container)) {
+					if (messageHandler.isBroadcastTarget(container, gameId, null)) {
 						JsonObject gameResponse = new JsonObject();
 						if (!game.isServer()) {
 							gameUpdate.setServer(messageHandler.isServerSession(container.getSession(), gameId));
@@ -242,8 +241,7 @@ public class GameController {
 			manager.setGame(gameId, game);
 
 			for (WebSocketSessionContainer container : messageHandler.getWebSocketSessions()) {
-				if (container.getGameId() == gameId
-						&& !messageHandler.getWebSocketSessionsCleanUp().contains(container)) {
+				if (messageHandler.isBroadcastTarget(container, gameId, null)) {
 					JsonObject gameResponse = new JsonObject();
 					if (!game.isServer()) {
 						game.setServer(messageHandler.isServerSession(container.getSession(), gameId));
@@ -298,8 +296,7 @@ public class GameController {
 		}
 
 		for (WebSocketSessionContainer container : messageHandler.getWebSocketSessions()) {
-			if (container.getGameId() == gameId
-					&& !messageHandler.getWebSocketSessionsCleanUp().contains(container)) {
+			if (messageHandler.isBroadcastTarget(container, gameId, null)) {
 				try {
 					JsonObject response = new JsonObject();
 					response.addProperty("type", "remoteCommand");

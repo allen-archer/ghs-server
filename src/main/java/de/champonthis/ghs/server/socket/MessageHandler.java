@@ -243,9 +243,7 @@ public class MessageHandler extends TextWebSocketHandler {
 									manager.setGame(gameId, gameUpdate);
 
 									for (WebSocketSessionContainer container : webSocketSessions) {
-										if (!container.getSession().getId().equals(session.getId())
-												&& container.getGameId() == gameId
-												&& !webSocketSessionsCleanUp.contains(container)) {
+										if (isBroadcastTarget(container, gameId, session)) {
 											if (!game.isServer()) {
 												gameUpdate.setServer(isServerSession(container.getSession(), gameId));
 											}
@@ -279,9 +277,7 @@ public class MessageHandler extends TextWebSocketHandler {
 									manager.setGame(gameId, updateGame);
 
 									for (WebSocketSessionContainer container : webSocketSessions) {
-										if (!container.getSession().getId().equals(session.getId())
-												&& container.getGameId() == gameId
-												&& !webSocketSessionsCleanUp.contains(container)) {
+										if (isBroadcastTarget(container, gameId, session)) {
 											if (!game.isServer()) {
 												updateGame.setServer(isServerSession(container.getSession(), gameId));
 											}
@@ -354,8 +350,7 @@ public class MessageHandler extends TextWebSocketHandler {
 
 								if (!game.isServer()) {
 									for (WebSocketSessionContainer container : webSocketSessions) {
-										if (container.getGameId() == gameId
-												&& webSocketSessionsCleanUp.indexOf(container) == -1) {
+										if (isBroadcastTarget(container, gameId, null)) {
 											JsonObject updateResponse = newMessage("requestUpdate");
 											container.getSession()
 													.sendMessage(new TextMessage(gson.toJson(updateResponse)));
@@ -398,8 +393,7 @@ public class MessageHandler extends TextWebSocketHandler {
 								}
 
 								for (WebSocketSessionContainer container : webSocketSessions) {
-									if (container.getSession() != session && container.getGameId() == gameId
-											&& !webSocketSessionsCleanUp.contains(container)) {
+									if (isBroadcastTarget(container, gameId, session)) {
 										JsonObject settingsResponse = newMessage("settings");
 										settingsResponse.add("payload", gson.toJsonTree(settingsUpdate));
 										container.getSession()
@@ -444,6 +438,11 @@ public class MessageHandler extends TextWebSocketHandler {
 			}
 		}
 		return isServer;
+	}
+
+	public boolean isBroadcastTarget(WebSocketSessionContainer container, long gameId, WebSocketSession exclude) {
+		return container.getSession() != exclude && container.getGameId() == gameId
+				&& !webSocketSessionsCleanUp.contains(container);
 	}
 
 	private JsonObject newMessage(String type) {
