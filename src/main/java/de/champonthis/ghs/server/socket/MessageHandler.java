@@ -104,10 +104,8 @@ public class MessageHandler extends TextWebSocketHandler {
 									sendError(container.getSession(), "No game found for 'id=" + gameId + "'");
 								} else {
 									game.setServer(isServerSession(container.getSession(), gameId));
-									JsonObject gameResponse = new JsonObject();
-									gameResponse.addProperty("type", "game-update");
+									JsonObject gameResponse = newMessage("game-update");
 									gameResponse.add("payload", gson.toJsonTree(game));
-									gameResponse.addProperty("serverVersion", buildVersion);
 									try {
 										container.getSession().sendMessage(new TextMessage(gson.toJson(gameResponse)));
 									} catch (IllegalStateException e) {
@@ -213,10 +211,8 @@ public class MessageHandler extends TextWebSocketHandler {
 								sendError(session, "cannot send errors to server!");
 								break;
 							case PING:
-								JsonObject pingMessage = new JsonObject();
-								pingMessage.addProperty("type", "ping");
+								JsonObject pingMessage = newMessage("ping");
 								pingMessage.addProperty("message", "pong");
-								pingMessage.addProperty("serverVersion", buildVersion);
 								session.sendMessage(new TextMessage(gson.toJson(pingMessage)));
 								break;
 							case GAME:
@@ -250,17 +246,15 @@ public class MessageHandler extends TextWebSocketHandler {
 										if (!container.getSession().getId().equals(session.getId())
 												&& container.getGameId() == gameId
 												&& !webSocketSessionsCleanUp.contains(container)) {
-											JsonObject gameResponse = new JsonObject();
 											if (!game.isServer()) {
 												gameUpdate.setServer(isServerSession(container.getSession(), gameId));
 											}
-											gameResponse.addProperty("type",
+											JsonObject gameResponse = newMessage(
 													type.toString().toLowerCase().replace('_', '-'));
 											gameResponse.add("payload", gson.toJsonTree(gameUpdate));
 											gameResponse.add("undoinfo", messageObject.get("undoinfo"));
 											gameResponse.add("revision", messageObject.get("revision"));
 											gameResponse.add("undolength", messageObject.get("undolength"));
-											gameResponse.addProperty("serverVersion", buildVersion);
 											container.getSession()
 													.sendMessage(new TextMessage(gson.toJson(gameResponse)));
 										}
@@ -288,13 +282,11 @@ public class MessageHandler extends TextWebSocketHandler {
 										if (!container.getSession().getId().equals(session.getId())
 												&& container.getGameId() == gameId
 												&& !webSocketSessionsCleanUp.contains(container)) {
-											JsonObject gameResponse = new JsonObject();
 											if (!game.isServer()) {
 												updateGame.setServer(isServerSession(container.getSession(), gameId));
 											}
-											gameResponse.addProperty("type", "game-update");
+											JsonObject gameResponse = newMessage("game-update");
 											gameResponse.add("payload", gson.toJsonTree(updateGame));
-											gameResponse.addProperty("serverVersion", buildVersion);
 											container.getSession()
 													.sendMessage(new TextMessage(gson.toJson(gameResponse)));
 										}
@@ -352,25 +344,19 @@ public class MessageHandler extends TextWebSocketHandler {
 							case REQUEST_GAME:
 								game.setServer(isServerSession(session, gameId));
 
-								JsonObject gameResponse = new JsonObject();
-								gameResponse.addProperty("type", "game");
+								JsonObject gameResponse = newMessage("game");
 								gameResponse.add("payload", gson.toJsonTree(game));
-								gameResponse.addProperty("serverVersion", buildVersion);
 								session.sendMessage(new TextMessage(gson.toJson(gameResponse)));
 
-								JsonObject permissionsResponse = new JsonObject();
-								permissionsResponse.addProperty("type", "permissions");
+								JsonObject permissionsResponse = newMessage("permissions");
 								permissionsResponse.add("payload", gson.toJsonTree(permissions));
-								permissionsResponse.addProperty("serverVersion", buildVersion);
 								session.sendMessage(new TextMessage(gson.toJson(permissionsResponse)));
 
 								if (!game.isServer()) {
 									for (WebSocketSessionContainer container : webSocketSessions) {
 										if (container.getGameId() == gameId
 												&& webSocketSessionsCleanUp.indexOf(container) == -1) {
-											JsonObject updateResponse = new JsonObject();
-											updateResponse.addProperty("type", "requestUpdate");
-											updateResponse.addProperty("serverVersion", buildVersion);
+											JsonObject updateResponse = newMessage("requestUpdate");
 											container.getSession()
 													.sendMessage(new TextMessage(gson.toJson(updateResponse)));
 											break;
@@ -381,8 +367,7 @@ public class MessageHandler extends TextWebSocketHandler {
 								break;
 							case REQUEST_SETTINGS:
 								Settings settings = manager.getSettings(gameId);
-								JsonObject settingsRequestResponse = new JsonObject();
-								settingsRequestResponse.addProperty("type", "settings");
+								JsonObject settingsRequestResponse = newMessage("settings");
 
 								// migration
 								if (settings == null && !messageObject.has("allow-empty")) {
@@ -393,7 +378,6 @@ public class MessageHandler extends TextWebSocketHandler {
 								if (settings != null) {
 									settingsRequestResponse.add("payload", gson.toJsonTree(settings));
 								}
-								settingsRequestResponse.addProperty("serverVersion", buildVersion);
 								session.sendMessage(new TextMessage(gson.toJson(settingsRequestResponse)));
 								break;
 							case SETTINGS:
@@ -416,10 +400,8 @@ public class MessageHandler extends TextWebSocketHandler {
 								for (WebSocketSessionContainer container : webSocketSessions) {
 									if (container.getSession() != session && container.getGameId() == gameId
 											&& !webSocketSessionsCleanUp.contains(container)) {
-										JsonObject settingsResponse = new JsonObject();
-										settingsResponse.addProperty("type", "settings");
+										JsonObject settingsResponse = newMessage("settings");
 										settingsResponse.add("payload", gson.toJsonTree(settingsUpdate));
-										settingsResponse.addProperty("serverVersion", buildVersion);
 										container.getSession()
 												.sendMessage(new TextMessage(gson.toJson(settingsResponse)));
 									}
@@ -464,15 +446,20 @@ public class MessageHandler extends TextWebSocketHandler {
 		return isServer;
 	}
 
+	private JsonObject newMessage(String type) {
+		JsonObject message = new JsonObject();
+		message.addProperty("type", type);
+		message.addProperty("serverVersion", buildVersion);
+		return message;
+	}
+
 	protected void sendError(WebSocketSession session, String message) throws Exception {
 		sendError(session, message, true);
 	}
 
 	protected void sendError(WebSocketSession session, String message, boolean stop) throws Exception {
-		JsonObject error = new JsonObject();
-		error.addProperty("type", "error");
+		JsonObject error = newMessage("error");
 		error.addProperty("message", message);
-		error.addProperty("serverVersion", buildVersion);
 		session.sendMessage(new TextMessage(gson.toJson(error)));
 		if (stop) {
 			throw new SendErrorException("Error: " + message);
