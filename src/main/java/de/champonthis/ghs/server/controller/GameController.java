@@ -2,6 +2,7 @@ package de.champonthis.ghs.server.controller;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -77,6 +78,17 @@ public class GameController {
 		return game;
 	}
 
+	private String asInvalidGamePayload(Callable<String> action) {
+		try {
+			return action.call();
+		} catch (Exception e) {
+			if (e instanceof ResponseStatusException) {
+				throw (ResponseStatusException) e;
+			}
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid game payload");
+		}
+	}
+
 	@GetMapping(produces = { MediaType.APPLICATION_JSON_VALUE })
 	public String requestGame(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String gameCode) {
 		return gson.toJson(getGame(gameCode));
@@ -102,7 +114,7 @@ public class GameController {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid game payload");
 		}
 
-		try {
+		return asInvalidGamePayload(() -> {
 			GameModel gameUpdate = null;
 			JsonArray undoInfo = null;
 			JsonObject data = JsonParser.parseString(payload).getAsJsonObject();
@@ -154,13 +166,7 @@ public class GameController {
 			}
 
 			return gson.toJson(gameUpdate);
-		} catch (Exception e) {
-			if (!(e instanceof ResponseStatusException)) {
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid game payload");
-			} else {
-				throw (ResponseStatusException) e;
-			}
-		}
+		});
 	}
 
 	@PostMapping(value = "/initiative", produces = { MediaType.APPLICATION_JSON_VALUE })
@@ -183,7 +189,7 @@ public class GameController {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid game payload");
 		}
 
-		try {
+		return asInvalidGamePayload(() -> {
 			boolean changed = false;
 			int playerNumber = data.get("playerNumber").getAsInt();
 			int initiative = data.get("initiative").getAsInt();
@@ -253,13 +259,7 @@ public class GameController {
 			}
 
 			return gson.toJson(game);
-		} catch (Exception e) {
-			if (!(e instanceof ResponseStatusException)) {
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid game payload");
-			} else {
-				throw (ResponseStatusException) e;
-			}
-		}
+		});
 	}
 
 	@PostMapping(value = "/command")
