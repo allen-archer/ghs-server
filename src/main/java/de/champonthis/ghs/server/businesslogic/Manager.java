@@ -194,17 +194,19 @@ public class Manager implements SmartInitializingSingleton {
 	 * the update is allowed. Shared between GameController and MessageHandler, whose
 	 * game-update handling was previously duplicated.
 	 */
+	private boolean deepEquals(Object a, Object b) {
+		return gson.toJson(a).equals(gson.toJson(b));
+	}
+
 	public String checkPermissions(GameModel game, GameModel gameUpdate, Permissions permissions) {
 		if (permissions == null) {
 			return null;
 		}
 
-		if (!permissions.isScenario()
-				&& !gson.toJson(gameUpdate.getScenario()).equals(gson.toJson(game.getScenario()))) {
+		if (!permissions.isScenario() && !deepEquals(gameUpdate.getScenario(), game.getScenario())) {
 			return "Permission(s) missing: scenario";
 		}
-		if (!permissions.isScenario()
-				&& !gson.toJson(gameUpdate.getSections()).equals(gson.toJson(game.getSections()))) {
+		if (!permissions.isScenario() && !deepEquals(gameUpdate.getSections(), game.getSections())) {
 			return "Permission(s) missing: scenario";
 		}
 		if (!permissions.isScenario()
@@ -212,12 +214,10 @@ public class Manager implements SmartInitializingSingleton {
 						|| game.getEdition() != null && !game.getEdition().equals(gameUpdate.getEdition()))) {
 			return "Permission(s) missing: scenario";
 		}
-		if (!permissions.isElements()
-				&& !gson.toJson(gameUpdate.getElementBoard()).equals(gson.toJson(game.getElementBoard()))) {
+		if (!permissions.isElements() && !deepEquals(gameUpdate.getElementBoard(), game.getElementBoard())) {
 			return "Permission(s) missing: elements";
 		}
-		if (!permissions.isLootDeck()
-				&& !gson.toJson(gameUpdate.getLootDeck()).equals(gson.toJson(game.getLootDeck()))) {
+		if (!permissions.isLootDeck() && !deepEquals(gameUpdate.getLootDeck(), game.getLootDeck())) {
 			return "Permission(s) missing: lootDeck";
 		}
 		if (!permissions.isRound() && gameUpdate.getRound() != game.getRound()) {
@@ -229,16 +229,16 @@ public class Manager implements SmartInitializingSingleton {
 		if (!permissions.isLevel() && gameUpdate.getLevel() != game.getLevel()) {
 			return "Permission(s) missing: level";
 		}
-		if (!permissions.isAttackModifiers() && !gson.toJson(gameUpdate.getMonsterAttackModifierDeck())
-				.equals(gson.toJson(game.getMonsterAttackModifierDeck()))) {
+		if (!permissions.isAttackModifiers()
+				&& !deepEquals(gameUpdate.getMonsterAttackModifierDeck(), game.getMonsterAttackModifierDeck())) {
 			return "Permission(s) missing: attackModifiers";
 		}
-		if (!permissions.isAttackModifiers() && !gson.toJson(gameUpdate.getAllyAttackModifierDeck())
-				.equals(gson.toJson(game.getAllyAttackModifierDeck()))) {
+		if (!permissions.isAttackModifiers()
+				&& !deepEquals(gameUpdate.getAllyAttackModifierDeck(), game.getAllyAttackModifierDeck())) {
 			return "Permission(s) missing";
 		}
-		if (!permissions.isParty() && (!gson.toJson(gameUpdate.getParty()).equals(gson.toJson(game.getParty()))
-				|| !gson.toJson(gameUpdate.getParties()).equals(gson.toJson(game.getParties())))) {
+		if (!permissions.isParty() && (!deepEquals(gameUpdate.getParty(), game.getParty())
+				|| !deepEquals(gameUpdate.getParties(), game.getParties()))) {
 			return "Permission(s) missing: party";
 		}
 		if (!permissions.isCharacters()) {
@@ -246,9 +246,9 @@ public class Manager implements SmartInitializingSingleton {
 				boolean characterPermission = false;
 				boolean roundPermissions = permissions.isRound() && gameUpdate.getState() != game.getState();
 				boolean lootDeckPermissions = permissions.isLootDeck()
-						&& !gson.toJson(gameUpdate.getLootDeck()).equals(gson.toJson(game.getLootDeck()));
+						&& !deepEquals(gameUpdate.getLootDeck(), game.getLootDeck());
 				boolean scenarioPermissions = permissions.isScenario()
-						&& !gson.toJson(gameUpdate.getScenario()).equals(gson.toJson(game.getScenario()));
+						&& !deepEquals(gameUpdate.getScenario(), game.getScenario());
 
 				for (GameCharacterModel character : game.getCharacters()) {
 					if (updateCharacter.getName().equals(character.getName())
@@ -297,9 +297,7 @@ public class Manager implements SmartInitializingSingleton {
 								character.setLoot(updateCharacter.getLoot());
 								character.setLootCards(updateCharacter.getLootCards());
 							}
-							String characterJson = gson.toJson(character);
-							String updateCharacterJson = gson.toJson(updateCharacter);
-							if (characterJson.equals(updateCharacterJson)) {
+							if (deepEquals(character, updateCharacter)) {
 								characterPermission = true;
 								break;
 							}
@@ -316,7 +314,7 @@ public class Manager implements SmartInitializingSingleton {
 				boolean monsterPermission = false;
 				boolean roundPermissions = permissions.isRound() && gameUpdate.getState() != game.getState();
 				boolean scenarioPermissions = permissions.isScenario()
-						&& !gson.toJson(gameUpdate.getScenario()).equals(gson.toJson(game.getScenario()));
+						&& !deepEquals(gameUpdate.getScenario(), game.getScenario());
 				for (GameMonsterModel monster : game.getMonsters()) {
 					if (updateMonster.getName().equals(monster.getName())
 							&& updateMonster.getEdition().equals(monster.getEdition())) {
@@ -345,8 +343,7 @@ public class Manager implements SmartInitializingSingleton {
 								monster.setOff(updateMonster.isOff());
 							}
 
-							if (scenarioPermissions
-									|| gson.toJson(updateMonster).equals(gson.toJson(monster))) {
+							if (scenarioPermissions || deepEquals(updateMonster, monster)) {
 								monsterPermission = true;
 								break;
 							}
