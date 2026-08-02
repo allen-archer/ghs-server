@@ -174,16 +174,15 @@ public class MessageHandler extends TextWebSocketHandler {
 				Long gameId = manager.getGameIdByGameCode(gameCode);
 
 				if (gameId == null) {
-					// if first game code or public create new game for game code
-					if (manager.countGameCodes() == 0 || isPublic) {
-						GameModel game = new GameModel();
-						game.setRevision(-1L);
-						if (messageObject.get("payload") != null && !messageObject.get("payload").isJsonNull()) {
-							game = gson.fromJson(messageObject.get("payload"), GameModel.class);
-						}
-						gameId = manager.createGame(game);
-						manager.createGameCode(gameCode, gameId);
-					} else {
+					GameModel newGame = new GameModel();
+					newGame.setRevision(-1L);
+					if (messageObject.get("payload") != null && !messageObject.get("payload").isJsonNull()) {
+						newGame = gson.fromJson(messageObject.get("payload"), GameModel.class);
+					}
+
+					gameId = manager.getOrCreateGameId(gameCode, isPublic, newGame);
+
+					if (gameId == null) {
 						sendError(session, "Invalid game code '" + gameCode + "'");
 					}
 				}

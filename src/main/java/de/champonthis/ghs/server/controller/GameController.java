@@ -62,17 +62,10 @@ public class GameController {
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 		}
 
-		Long gameId = manager.getGameIdByGameCode(gameCode);
+		Long gameId = manager.getOrCreateGameId(gameCode, isPublic, new GameModel());
 
 		if (gameId == null) {
-			// if first game code or public create new game for game code
-			if (manager.countGameCodes() == 0 || isPublic) {
-				GameModel game = new GameModel();
-				gameId = manager.createGame(game);
-				manager.createGameCode(gameCode, gameId);
-			} else {
-				throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-			}
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 
 		GameModel game = manager.getGame(gameId);

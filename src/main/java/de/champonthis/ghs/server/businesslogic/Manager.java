@@ -100,6 +100,22 @@ public class Manager implements SmartInitializingSingleton {
 		gameCodeRepository.save(gameCode);
 	}
 
+	/**
+	 * Resolves the game id for {@code code}, creating a new game and game code for it
+	 * if none exists yet and creation is allowed (first game code ever, or public server).
+	 * Returns {@code null} if the code is unknown and creation is not allowed.
+	 */
+	public Long getOrCreateGameId(String code, boolean isPublic, GameModel newGame) {
+		Long gameId = getGameIdByGameCode(code);
+
+		if (gameId == null && (countGameCodes() == 0 || isPublic)) {
+			gameId = createGame(newGame);
+			createGameCode(code, gameId);
+		}
+
+		return gameId;
+	}
+
 	public Long getGameIdByGameCode(String code) {
 		GameCode gameCode = gameCodeRepository.findById(code).orElse(null);
 
