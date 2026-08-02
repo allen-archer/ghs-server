@@ -103,9 +103,10 @@ public class Manager implements SmartInitializingSingleton {
 	/**
 	 * Resolves the game id for {@code code}, creating a new game and game code for it
 	 * if none exists yet and creation is allowed (first game code ever, or public server).
-	 * Returns {@code null} if the code is unknown and creation is not allowed.
+	 * Returns {@code null} if the code is unknown and creation is not allowed. Synchronized
+	 * which means that any simultaneous requests will not race.
 	 */
-	public Long getOrCreateGameId(String code, boolean isPublic, GameModel newGame) {
+	public synchronized Long getOrCreateGameId(String code, boolean isPublic, GameModel newGame) {
 		Long gameId = getGameIdByGameCode(code);
 
 		if (gameId == null && (countGameCodes() == 0 || isPublic)) {
