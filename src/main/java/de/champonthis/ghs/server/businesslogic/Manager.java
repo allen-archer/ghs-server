@@ -12,7 +12,10 @@ import com.google.gson.Gson;
 import de.champonthis.ghs.server.entity.Game;
 import de.champonthis.ghs.server.entity.GameCode;
 import de.champonthis.ghs.server.entity.Setting;
+import de.champonthis.ghs.server.model.GameCharacterModel;
 import de.champonthis.ghs.server.model.GameModel;
+import de.champonthis.ghs.server.model.GameMonsterModel;
+import de.champonthis.ghs.server.model.Identifier;
 import de.champonthis.ghs.server.model.Permissions;
 import de.champonthis.ghs.server.model.Settings;
 import de.champonthis.ghs.server.repository.GameCodeRepository;
@@ -167,6 +170,180 @@ public class Manager implements SmartInitializingSingleton {
 			setting.setSettings(gson.toJson(settings));
 			settingRepository.save(setting);
 		}
+	}
+
+	/**
+	 * Checks whether {@code gameUpdate} stays within {@code permissions} relative to
+	 * {@code game}. Returns the first violated permission message, or {@code null} if
+	 * the update is allowed. Shared between GameController and MessageHandler, whose
+	 * game-update handling was previously duplicated.
+	 */
+	public String checkPermissions(GameModel game, GameModel gameUpdate, Permissions permissions) {
+		if (permissions == null) {
+			return null;
+		}
+
+		if (!permissions.isScenario()
+				&& !gson.toJson(gameUpdate.getScenario()).equals(gson.toJson(game.getScenario()))) {
+			return "Permission(s) missing: scenario";
+		}
+		if (!permissions.isScenario()
+				&& !gson.toJson(gameUpdate.getSections()).equals(gson.toJson(game.getSections()))) {
+			return "Permission(s) missing: scenario";
+		}
+		if (!permissions.isScenario()
+				&& (gameUpdate.getEdition() != null && !gameUpdate.getEdition().equals(game.getEdition())
+						|| game.getEdition() != null && !game.getEdition().equals(gameUpdate.getEdition()))) {
+			return "Permission(s) missing: scenario";
+		}
+		if (!permissions.isElements()
+				&& !gson.toJson(gameUpdate.getElementBoard()).equals(gson.toJson(game.getElementBoard()))) {
+			return "Permission(s) missing: elements";
+		}
+		if (!permissions.isLootDeck()
+				&& !gson.toJson(gameUpdate.getLootDeck()).equals(gson.toJson(game.getLootDeck()))) {
+			return "Permission(s) missing: lootDeck";
+		}
+		if (!permissions.isRound() && gameUpdate.getRound() != game.getRound()) {
+			return "Permission(s) missing: round";
+		}
+		if (!permissions.isRound() && !gameUpdate.getState().equals(game.getState())) {
+			return "Permission(s) missing: round";
+		}
+		if (!permissions.isLevel() && gameUpdate.getLevel() != game.getLevel()) {
+			return "Permission(s) missing: level";
+		}
+		if (!permissions.isAttackModifiers() && !gson.toJson(gameUpdate.getMonsterAttackModifierDeck())
+				.equals(gson.toJson(game.getMonsterAttackModifierDeck()))) {
+			return "Permission(s) missing: attackModifiers";
+		}
+		if (!permissions.isAttackModifiers() && !gson.toJson(gameUpdate.getAllyAttackModifierDeck())
+				.equals(gson.toJson(game.getAllyAttackModifierDeck()))) {
+			return "Permission(s) missing";
+		}
+		if (!permissions.isParty() && (!gson.toJson(gameUpdate.getParty()).equals(gson.toJson(game.getParty()))
+				|| !gson.toJson(gameUpdate.getParties()).equals(gson.toJson(game.getParties())))) {
+			return "Permission(s) missing: party";
+		}
+		if (!permissions.isCharacters()) {
+			for (GameCharacterModel updateCharacter : gameUpdate.getCharacters()) {
+				boolean characterPermission = false;
+				boolean roundPermissions = permissions.isRound() && gameUpdate.getState() != game.getState();
+				boolean lootDeckPermissions = permissions.isLootDeck()
+						&& !gson.toJson(gameUpdate.getLootDeck()).equals(gson.toJson(game.getLootDeck()));
+				boolean scenarioPermissions = permissions.isScenario()
+						&& !gson.toJson(gameUpdate.getScenario()).equals(gson.toJson(game.getScenario()));
+
+				for (GameCharacterModel character : game.getCharacters()) {
+					if (updateCharacter.getName().equals(character.getName())
+							&& updateCharacter.getEdition().equals(character.getEdition())) {
+						for (Identifier characterFigure : permissions.getCharacter()) {
+							if (characterFigure.getName().equals(character.getName())
+									&& characterFigure.getEdition().equals(character.getEdition())) {
+								characterPermission = true;
+								break;
+							}
+						}
+						if (characterPermission) {
+							break;
+						} else {
+							updateCharacter.getAttackModifierDeck()
+									.setActive(character.getAttackModifierDeck().isActive());
+
+							if (permissions.isRound()) {
+								character.setOff(updateCharacter.isOff());
+								character.setActive(updateCharacter.isActive());
+								character.setEntityConditions(updateCharacter.getEntityConditions());
+							}
+
+							if (roundPermissions || scenarioPermissions) {
+								character.setOff(updateCharacter.isOff());
+								character.setActive(updateCharacter.isActive());
+								character.setInitiative(updateCharacter.getInitiative());
+								character.setEntityConditions(updateCharacter.getEntityConditions());
+								character.setAttackModifierDeck(updateCharacter.getAttackModifierDeck());
+							}
+
+							if (scenarioPermissions) {
+								character.setHealth(updateCharacter.getHealth());
+								character.setMaxHealth(updateCharacter.getMaxHealth());
+								character.setLoot(updateCharacter.getLoot());
+								character.setLootCards(updateCharacter.getLootCards());
+								character.setTreasures(updateCharacter.getTreasures());
+								character.setExperience(updateCharacter.getExperience());
+								character.setEntityConditions(updateCharacter.getEntityConditions());
+								character.setSummons(updateCharacter.getSummons());
+								character.setExhausted(updateCharacter.isExhausted());
+								character.setToken(updateCharacter.getToken());
+							}
+
+							if (lootDeckPermissions) {
+								character.setLoot(updateCharacter.getLoot());
+								character.setLootCards(updateCharacter.getLootCards());
+							}
+							String characterJson = gson.toJson(character);
+							String updateCharacterJson = gson.toJson(updateCharacter);
+							if (characterJson.equals(updateCharacterJson)) {
+								characterPermission = true;
+								break;
+							}
+						}
+					}
+				}
+				if (!characterPermission) {
+					return "Permission(s) missing: characters";
+				}
+			}
+		}
+		if (!permissions.isMonsters()) {
+			for (GameMonsterModel updateMonster : gameUpdate.getMonsters()) {
+				boolean monsterPermission = false;
+				boolean roundPermissions = permissions.isRound() && gameUpdate.getState() != game.getState();
+				boolean scenarioPermissions = permissions.isScenario()
+						&& !gson.toJson(gameUpdate.getScenario()).equals(gson.toJson(game.getScenario()));
+				for (GameMonsterModel monster : game.getMonsters()) {
+					if (updateMonster.getName().equals(monster.getName())
+							&& updateMonster.getEdition().equals(monster.getEdition())) {
+						for (Identifier monsterFigure : permissions.getMonster()) {
+							if (monsterFigure.getName().equals(monster.getName())
+									&& monsterFigure.getEdition().equals(monster.getEdition())) {
+								monsterPermission = true;
+								break;
+							}
+						}
+						if (monsterPermission) {
+							break;
+						} else {
+
+							if (permissions.isRound()) {
+								monster.setOff(updateMonster.isOff());
+								monster.setActive(updateMonster.isActive());
+								monster.setEntities(updateMonster.getEntities());
+							}
+
+							if (roundPermissions) {
+								monster.setAbility(updateMonster.getAbility());
+								monster.setAbilities(updateMonster.getAbilities());
+								monster.setEntities(updateMonster.getEntities());
+								monster.setActive(updateMonster.isActive());
+								monster.setOff(updateMonster.isOff());
+							}
+
+							if (scenarioPermissions
+									|| gson.toJson(updateMonster).equals(gson.toJson(monster))) {
+								monsterPermission = true;
+								break;
+							}
+						}
+					}
+				}
+				if (!monsterPermission && !game.getMonsters().isEmpty() && !scenarioPermissions) {
+					return "Permission(s) missing: monsters";
+				}
+			}
+		}
+
+		return null;
 	}
 
 }
